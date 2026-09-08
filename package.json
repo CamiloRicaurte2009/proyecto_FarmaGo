@@ -21,8 +21,11 @@
   },
   "homepage": "https://github.com/CamiloRicaurte2009/proyecto_FarmaGo#readme",
   "dependencies": {
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mysql2": "^3.24.3",
+    "sequelize": "^6.37.8"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
