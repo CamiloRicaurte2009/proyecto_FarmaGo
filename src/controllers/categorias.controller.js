@@ -2,9 +2,7 @@ const Categoria = require('../models/categoria.model');
 
 const obtenerCategorias = async (req, res) => {
     try {
-        const categorias = await Categoria.findAll({
-            order: [['id', 'ASC']]
-        });
+        const categorias = await Categoria.getAll();
 
         res.status(200).json({
             success: true,
@@ -24,7 +22,7 @@ const obtenerCategorias = async (req, res) => {
 
 const obtenerCategoriaPorId = async (req, res) => {
     try {
-        const categoria = await Categoria.findByPk(req.params.id);
+        const categoria = await Categoria.getById(req.params.id);
 
         if (!categoria) {
             return res.status(404).json({
@@ -57,10 +55,7 @@ const crearCategoria = async (req, res) => {
             });
         }
 
-        const categoria = await Categoria.create({
-            nombre,
-            descripcion
-        });
+        const categoria = await Categoria.create({ nombre, descripcion });
 
         res.status(201).json({
             success: true,
@@ -80,16 +75,17 @@ const crearCategoria = async (req, res) => {
 
 const actualizarCategoria = async (req, res) => {
     try {
-        const categoria = await Categoria.findByPk(req.params.id);
+        const existente = await Categoria.getById(req.params.id);
 
-        if (!categoria) {
+        if (!existente) {
             return res.status(404).json({
                 success: false,
                 message: 'Categoría no encontrada'
             });
         }
 
-        await categoria.update(req.body);
+        await Categoria.update(req.params.id, req.body);
+        const categoria = await Categoria.getById(req.params.id);
 
         res.status(200).json({
             success: true,
@@ -107,16 +103,16 @@ const actualizarCategoria = async (req, res) => {
 
 const eliminarCategoria = async (req, res) => {
     try {
-        const categoria = await Categoria.findByPk(req.params.id);
+        const existente = await Categoria.getById(req.params.id);
 
-        if (!categoria) {
+        if (!existente) {
             return res.status(404).json({
                 success: false,
                 message: 'Categoría no encontrada'
             });
         }
 
-        await categoria.destroy();
+        await Categoria.remove(req.params.id);
 
         res.status(200).json({
             success: true,

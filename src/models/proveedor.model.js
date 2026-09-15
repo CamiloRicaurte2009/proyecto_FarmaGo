@@ -1,45 +1,49 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const pool = require('../config/database');
 
-const Proveedor = sequelize.define(
-    'Proveedor',
-    {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true
-        },
+// ? = placeholder seguro (evita SQL Injection)
 
-        nombre: {
-            type: DataTypes.STRING(150),
-            allowNull: false
-        },
+const getAll = async () => {
+  const [rows] = await pool.query(
+    'SELECT * FROM proveedores ORDER BY id ASC'
+  );
+  return rows;
+};
 
-        nit: {
-            type: DataTypes.STRING(30),
-            allowNull: true,
-            unique: true
-        },
+const getById = async (id) => {
+  const [rows] = await pool.query(
+    'SELECT * FROM proveedores WHERE id = ?', [id]
+  );
+  return rows[0]; // undefined si no existe
+};
 
-        telefono: {
-            type: DataTypes.STRING(30),
-            allowNull: true
-        },
+const create = async ({ nombre, nit, telefono, correo, direccion }) => {
+  const [result] = await pool.query(
+    `INSERT INTO proveedores (nombre, nit, telefono, correo, direccion)
+     VALUES (?, ?, ?, ?, ?)`,
+    [nombre, nit ?? null, telefono ?? null, correo ?? null, direccion ?? null]
+  );
+  return getById(result.insertId);
+};
 
-        correo: {
-            type: DataTypes.STRING(100),
-            allowNull: true
-        },
+const update = async (id, { nombre, nit, telefono, correo, direccion }) => {
+  const [result] = await pool.query(
+    `UPDATE proveedores
+     SET nombre    = COALESCE(?, nombre),
+         nit       = COALESCE(?, nit),
+         telefono  = COALESCE(?, telefono),
+         correo    = COALESCE(?, correo),
+         direccion = COALESCE(?, direccion)
+     WHERE id = ?`,
+    [nombre, nit, telefono, correo, direccion, id]
+  );
+  return result.affectedRows; // 0 si no existe
+};
 
-        direccion: {
-            type: DataTypes.STRING(200),
-            allowNull: true
-        }
-    },
-    {
-        tableName: 'proveedores',
-        timestamps: true
-    }
-);
+const remove = async (id) => {
+  const [result] = await pool.query(
+    'DELETE FROM proveedores WHERE id = ?', [id]
+  );
+  return result.affectedRows; // 0 si no existía
+};
 
-module.exports = Proveedor;
+module.exports = { getAll, getById, create, update, remove };

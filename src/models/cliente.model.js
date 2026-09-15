@@ -1,45 +1,49 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const pool = require('../config/database');
 
-const Cliente = sequelize.define(
-    'Cliente',
-    {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true
-        },
+// ? = placeholder seguro (evita SQL Injection)
 
-        nombre: {
-            type: DataTypes.STRING(100),
-            allowNull: false
-        },
+const getAll = async () => {
+  const [rows] = await pool.query(
+    'SELECT * FROM clientes ORDER BY id ASC'
+  );
+  return rows;
+};
 
-        documento: {
-            type: DataTypes.STRING(30),
-            allowNull: false,
-            unique: true
-        },
+const getById = async (id) => {
+  const [rows] = await pool.query(
+    'SELECT * FROM clientes WHERE id = ?', [id]
+  );
+  return rows[0]; // undefined si no existe
+};
 
-        telefono: {
-            type: DataTypes.STRING(30),
-            allowNull: true
-        },
+const create = async ({ nombre, documento, telefono, correo, direccion }) => {
+  const [result] = await pool.query(
+    `INSERT INTO clientes (nombre, documento, telefono, correo, direccion)
+     VALUES (?, ?, ?, ?, ?)`,
+    [nombre, documento, telefono ?? null, correo ?? null, direccion ?? null]
+  );
+  return getById(result.insertId);
+};
 
-        correo: {
-            type: DataTypes.STRING(100),
-            allowNull: true
-        },
+const update = async (id, { nombre, documento, telefono, correo, direccion }) => {
+  const [result] = await pool.query(
+    `UPDATE clientes
+     SET nombre    = COALESCE(?, nombre),
+         documento = COALESCE(?, documento),
+         telefono  = COALESCE(?, telefono),
+         correo    = COALESCE(?, correo),
+         direccion = COALESCE(?, direccion)
+     WHERE id = ?`,
+    [nombre, documento, telefono, correo, direccion, id]
+  );
+  return result.affectedRows; // 0 si no existe
+};
 
-        direccion: {
-            type: DataTypes.STRING(200),
-            allowNull: true
-        }
-    },
-    {
-        tableName: 'clientes',
-        timestamps: true
-    }
-);
+const remove = async (id) => {
+  const [result] = await pool.query(
+    'DELETE FROM clientes WHERE id = ?', [id]
+  );
+  return result.affectedRows; // 0 si no existía
+};
 
-module.exports = Cliente;
+module.exports = { getAll, getById, create, update, remove };

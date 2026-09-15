@@ -1,60 +1,97 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const pool = require('../config/database');
 
-const Producto = sequelize.define(
-    'Producto',
-    {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true
-        },
+// ? = placeholder seguro (evita SQL Injection)
 
-        nombre: {
-            type: DataTypes.STRING(100),
-            allowNull: false
-        },
+const getAll = async () => {
+  const [rows] = await pool.query(
+    'SELECT * FROM productos ORDER BY id ASC'
+  );
+  return rows;
+};
 
-        descripcion: {
-            type: DataTypes.TEXT,
-            allowNull: true
-        },
+const getById = async (id, conn = pool) => {
+  const [rows] = await conn.query(
+    'SELECT * FROM productos WHERE id = ?', [id]
+  );
+  return rows[0]; // undefined si no existe
+};
 
-        precio: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        },
+// Vista resumida para /api/inventario (ordenada por stock ascendente)
+const getInventario = async () => {
+  const [rows] = await pool.query(
+    `SELECT id, nombre, precio, stock, categoria, laboratorio, fecha_vencimiento
+     FROM productos
+     ORDER BY stock ASC`
+  );
+  return rows;
+};
 
-        stock: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-            defaultValue: 0
-        },
+const getLowStock = async (limite = 10) => {
+  const [rows] = await pool.query(
+    'SELECT * FROM productos WHERE stock <= ? ORDER BY stock ASC',
+    [limite]
+  );
+  return rows;
+};
 
-        categoria: {
-            type: DataTypes.STRING(100),
-            allowNull: true
-        },
+const create = async ({
+  nombre, descripcion, precio, stock,
+  categoria, laboratorio, fecha_vencimiento, requiere_formula
+}) => {
+  const [result] = await pool.query(
+    `INSERT INTO productos
+       (nombre, descripcion, precio, stock, categoria, laboratorio, fecha_vencimiento, requiere_formula)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      nombre, descripcion ?? null, precio, stock ?? 0,
+      categoria ?? null, laboratorio ?? null,
+      fecha_vencimiento ?? null, requiere_formula ?? false
+    ]
+  );
+  return getById(result.insertId);
+};
 
-        laboratorio: {
-            type: DataTypes.STRING(100),
-            allowNull: true
-        },
+const update = async (id, {
+  nombre, descripcion, precio, stock,
+  categoria, laboratorio, fecha_vencimiento, requiere_formula
+}) => {
+  const [result] = await pool.query(
+    `UPDATE productos
+     SET nombre            = COALESCE(?, nombre),
+         descripcion       = COALESCE(?, descripcion),
+         precio            = COALESCE(?, precio),
+         stock             = COALESCE(?, stock),
+         categoria         = COALESCE(?, categoria),
+         laboratorio       = COALESCE(?, laboratorio),
+         fecha_vencimiento = COALESCE(?, fecha_vencimiento),
+         requiere_formula  = COALESCE(?, requiere_formula)
+     WHERE id = ?`,
+    [
+      nombre, descripcion, precio, stock,
+      categoria, laboratorio, fecha_vencimiento, requiere_formula, id
+    ]
+  );
+  return result.affectedRows; // 0 si no existe
+};
 
-        fecha_vencimiento: {
-            type: DataTypes.DATEONLY,
-            allowNull: true
-        },
+const remove = async (id) => {
+  const [result] = await pool.query(
+    'DELETE FROM productos WHERE id = ?', [id]
+  );
+  return result.affectedRows; // 0 si no existía
+};
 
-        requiere_formula: {
-            type: DataTypes.BOOLEAN,
-            defaultValue: false
-        }
-    },
-    {
-        tableName: 'productos',
-        timestamps: true
-    }
-);
+// Suma (o resta, si cantidad es negativa) al stock actual.
+// Acepta una conexión de transacción (usado por ventas.controller.js).
+const ajustarStock = async (id, cantidad, conn = pool) => {
+  const [result] = await conn.query(
+    'UPDATE productos SET stock = stock + ? WHERE id = ?',
+    [cantidad, id]
+  );
+  return result.affectedRows;
+};
 
-module.exports = Producto;
+module.exports = {
+  getAll, getById, getInventario, getLowStock,
+  create, update, remove, ajustarStock
+};

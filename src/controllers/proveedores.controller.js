@@ -2,9 +2,7 @@ const Proveedor = require('../models/proveedor.model');
 
 const obtenerProveedores = async (req, res) => {
     try {
-        const proveedores = await Proveedor.findAll({
-            order: [['id', 'ASC']]
-        });
+        const proveedores = await Proveedor.getAll();
 
         res.status(200).json({
             success: true,
@@ -24,7 +22,7 @@ const obtenerProveedores = async (req, res) => {
 
 const obtenerProveedorPorId = async (req, res) => {
     try {
-        const proveedor = await Proveedor.findByPk(req.params.id);
+        const proveedor = await Proveedor.getById(req.params.id);
 
         if (!proveedor) {
             return res.status(404).json({
@@ -48,13 +46,7 @@ const obtenerProveedorPorId = async (req, res) => {
 
 const crearProveedor = async (req, res) => {
     try {
-        const {
-            nombre,
-            nit,
-            telefono,
-            correo,
-            direccion
-        } = req.body;
+        const { nombre, nit, telefono, correo, direccion } = req.body;
 
         if (!nombre) {
             return res.status(400).json({
@@ -63,13 +55,7 @@ const crearProveedor = async (req, res) => {
             });
         }
 
-        const proveedor = await Proveedor.create({
-            nombre,
-            nit,
-            telefono,
-            correo,
-            direccion
-        });
+        const proveedor = await Proveedor.create({ nombre, nit, telefono, correo, direccion });
 
         res.status(201).json({
             success: true,
@@ -89,16 +75,17 @@ const crearProveedor = async (req, res) => {
 
 const actualizarProveedor = async (req, res) => {
     try {
-        const proveedor = await Proveedor.findByPk(req.params.id);
+        const existente = await Proveedor.getById(req.params.id);
 
-        if (!proveedor) {
+        if (!existente) {
             return res.status(404).json({
                 success: false,
                 message: 'Proveedor no encontrado'
             });
         }
 
-        await proveedor.update(req.body);
+        await Proveedor.update(req.params.id, req.body);
+        const proveedor = await Proveedor.getById(req.params.id);
 
         res.status(200).json({
             success: true,
@@ -116,16 +103,16 @@ const actualizarProveedor = async (req, res) => {
 
 const eliminarProveedor = async (req, res) => {
     try {
-        const proveedor = await Proveedor.findByPk(req.params.id);
+        const existente = await Proveedor.getById(req.params.id);
 
-        if (!proveedor) {
+        if (!existente) {
             return res.status(404).json({
                 success: false,
                 message: 'Proveedor no encontrado'
             });
         }
 
-        await proveedor.destroy();
+        await Proveedor.remove(req.params.id);
 
         res.status(200).json({
             success: true,
