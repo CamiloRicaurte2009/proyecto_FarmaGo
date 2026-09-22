@@ -2,18 +2,7 @@ const Producto = require('../models/producto.model');
 
 const obtenerInventario = async (req, res) => {
     try {
-        const productos = await Producto.findAll({
-            attributes: [
-                'id',
-                'nombre',
-                'precio',
-                'stock',
-                'categoria',
-                'laboratorio',
-                'fecha_vencimiento'
-            ],
-            order: [['stock', 'ASC']]
-        });
+        const productos = await Producto.getInventario();
 
         res.status(200).json({
             success: true,
@@ -33,14 +22,7 @@ const obtenerInventario = async (req, res) => {
 
 const productosBajoStock = async (req, res) => {
     try {
-        const productos = await Producto.findAll({
-            where: {
-                stock: {
-                    [require('sequelize').Op.lte]: 10
-                }
-            },
-            order: [['stock', 'ASC']]
-        });
+        const productos = await Producto.getLowStock(10);
 
         res.status(200).json({
             success: true,
@@ -76,7 +58,7 @@ const entradaInventario = async (req, res) => {
             });
         }
 
-        const producto = await Producto.findByPk(producto_id);
+        const producto = await Producto.getById(producto_id);
 
         if (!producto) {
             return res.status(404).json({
@@ -85,14 +67,13 @@ const entradaInventario = async (req, res) => {
             });
         }
 
-        producto.stock += Number(cantidad);
-
-        await producto.save();
+        await Producto.ajustarStock(producto_id, Number(cantidad));
+        const actualizado = await Producto.getById(producto_id);
 
         res.status(200).json({
             success: true,
             message: 'Entrada de inventario registrada',
-            data: producto
+            data: actualizado
         });
 
     } catch (error) {
@@ -123,7 +104,7 @@ const salidaInventario = async (req, res) => {
             });
         }
 
-        const producto = await Producto.findByPk(producto_id);
+        const producto = await Producto.getById(producto_id);
 
         if (!producto) {
             return res.status(404).json({
@@ -139,14 +120,13 @@ const salidaInventario = async (req, res) => {
             });
         }
 
-        producto.stock -= Number(cantidad);
-
-        await producto.save();
+        await Producto.ajustarStock(producto_id, -Number(cantidad));
+        const actualizado = await Producto.getById(producto_id);
 
         res.status(200).json({
             success: true,
             message: 'Salida de inventario registrada',
-            data: producto
+            data: actualizado
         });
 
     } catch (error) {

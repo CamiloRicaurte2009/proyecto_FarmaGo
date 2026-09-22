@@ -6,9 +6,7 @@ const Producto = require('../models/producto.model');
 // ==========================================
 const obtenerProductos = async (req, res) => {
     try {
-        const productos = await Producto.findAll({
-            order: [['id', 'ASC']]
-        });
+        const productos = await Producto.getAll();
 
         res.status(200).json({
             success: true,
@@ -35,7 +33,7 @@ const obtenerProductoPorId = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const producto = await Producto.findByPk(id);
+        const producto = await Producto.getById(id);
 
         if (!producto) {
             return res.status(404).json({
@@ -127,9 +125,9 @@ const actualizarProducto = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const producto = await Producto.findByPk(id);
+        const existente = await Producto.getById(id);
 
-        if (!producto) {
+        if (!existente) {
             return res.status(404).json({
                 success: false,
                 message: 'Producto no encontrado'
@@ -161,7 +159,7 @@ const actualizarProducto = async (req, res) => {
             });
         }
 
-        await producto.update({
+        await Producto.update(id, {
             nombre,
             descripcion,
             precio,
@@ -171,6 +169,8 @@ const actualizarProducto = async (req, res) => {
             fecha_vencimiento,
             requiere_formula
         });
+
+        const producto = await Producto.getById(id);
 
         res.status(200).json({
             success: true,
@@ -197,16 +197,16 @@ const eliminarProducto = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const producto = await Producto.findByPk(id);
+        const existente = await Producto.getById(id);
 
-        if (!producto) {
+        if (!existente) {
             return res.status(404).json({
                 success: false,
                 message: 'Producto no encontrado'
             });
         }
 
-        await producto.destroy();
+        await Producto.remove(id);
 
         res.status(200).json({
             success: true,

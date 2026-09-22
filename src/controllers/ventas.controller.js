@@ -1,4 +1,4 @@
-const { sequelize } = require('../config/database');
+const pool = require('../config/database');
 
 const Venta = require('../models/venta.model');
 const DetalleVenta = require('../models/detalleVenta.model');
@@ -7,16 +7,7 @@ const Cliente = require('../models/cliente.model');
 
 const obtenerVentas = async (req, res) => {
     try {
-        const ventas = await Venta.findAll({
-            include: [
-                {
-                    model: Cliente,
-                    attributes: ['id', 'nombre', 'documento'],
-                    required: false
-                }
-            ],
-            order: [['id', 'DESC']]
-        });
+        const ventas = await Venta.getAll();
 
         res.status(200).json({
             success: true,
@@ -36,28 +27,7 @@ const obtenerVentas = async (req, res) => {
 
 const obtenerVentaPorId = async (req, res) => {
     try {
-        const venta = await Venta.findByPk(req.params.id, {
-            include: [
-                {
-                    model: Cliente,
-                    attributes: ['id', 'nombre', 'documento'],
-                    required: false
-                },
-                {
-                    model: DetalleVenta,
-                    include: [
-                        {
-                            model: Producto,
-                            attributes: [
-                                'id',
-                                'nombre',
-                                'precio'
-                            ]
-                        }
-                    ]
-                }
-            ]
-        });
+        const venta = await Venta.getById(req.params.id);
 
         if (!venta) {
             return res.status(404).json({
@@ -66,9 +36,11 @@ const obtenerVentaPorId = async (req, res) => {
             });
         }
 
+        const detalles = await DetalleVenta.getByVentaId(venta.id);
+
         res.status(200).json({
             success: true,
-            data: venta
+            data: { ...venta, detalles }
         });
 
     } catch (error) {
@@ -82,17 +54,18 @@ const obtenerVentaPorId = async (req, res) => {
 };
 
 const crearVenta = async (req, res) => {
-    const transaction = await sequelize.transaction();
+    // Transacción manual: usamos una sola conexión del pool para
+    // garantizar que venta + detalles + stock se confirmen o se
+    // reviertan todos juntos.
+    const conn = await pool.getConnection();
 
     try {
-        const {
-            cliente_id,
-            metodo_pago,
-            productos
-        } = req.body;
+        await conn.beginTransaction();
+
+        const { cliente_id, metodo_pago, productos } = req.body;
 
         if (!productos || !Array.isArray(productos) || productos.length === 0) {
-            await transaction.rollback();
+            await conn.rollback();
 
             return res.status(400).json({
                 success: false,
@@ -101,10 +74,10 @@ const crearVenta = async (req, res) => {
         }
 
         if (cliente_id) {
-            const cliente = await Cliente.findByPk(cliente_id);
+            const cliente = await Cliente.getById(cliente_id);
 
             if (!cliente) {
-                await transaction.rollback();
+                await conn.rollback();
 
                 return res.status(404).json({
                     success: false,
@@ -114,17 +87,19 @@ const crearVenta = async (req, res) => {
         }
 
         let total = 0;
-
         const detalles = [];
 
         for (const item of productos) {
-            const producto = await Producto.findByPk(
-                item.producto_id,
-                { transaction }
+            // FOR UPDATE bloquea la fila del producto hasta el commit/rollback,
+            // evitando que dos ventas simultáneas vendan el mismo stock.
+            const [rows] = await conn.query(
+                'SELECT * FROM productos WHERE id = ? FOR UPDATE',
+                [item.producto_id]
             );
+            const producto = rows[0];
 
             if (!producto) {
-                await transaction.rollback();
+                await conn.rollback();
 
                 return res.status(404).json({
                     success: false,
@@ -135,7 +110,7 @@ const crearVenta = async (req, res) => {
             const cantidad = Number(item.cantidad);
 
             if (!cantidad || cantidad <= 0) {
-                await transaction.rollback();
+                await conn.rollback();
 
                 return res.status(400).json({
                     success: false,
@@ -144,7 +119,7 @@ const crearVenta = async (req, res) => {
             }
 
             if (producto.stock < cantidad) {
-                await transaction.rollback();
+                await conn.rollback();
 
                 return res.status(400).json({
                     success: false,
@@ -153,59 +128,51 @@ const crearVenta = async (req, res) => {
             }
 
             const precio = Number(producto.precio);
-
             const subtotal = precio * cantidad;
 
             total += subtotal;
 
-            detalles.push({
-                producto,
-                cantidad,
-                precio,
-                subtotal
-            });
+            detalles.push({ producto, cantidad, precio, subtotal });
         }
 
-        const venta = await Venta.create(
+        const ventaId = await Venta.create(
             {
                 cliente_id: cliente_id || null,
                 total,
                 metodo_pago: metodo_pago || 'efectivo',
                 estado: 'completada'
             },
-            { transaction }
+            conn
         );
 
         for (const detalle of detalles) {
             await DetalleVenta.create(
                 {
-                    venta_id: venta.id,
+                    venta_id: ventaId,
                     producto_id: detalle.producto.id,
                     cantidad: detalle.cantidad,
                     precio_unitario: detalle.precio,
                     subtotal: detalle.subtotal
                 },
-                { transaction }
+                conn
             );
 
-            detalle.producto.stock -= detalle.cantidad;
-
-            await detalle.producto.save({ transaction });
+            await Producto.ajustarStock(detalle.producto.id, -detalle.cantidad, conn);
         }
 
-        await transaction.commit();
+        await conn.commit();
 
         res.status(201).json({
             success: true,
             message: 'Venta registrada correctamente',
             data: {
-                venta_id: venta.id,
-                total: total
+                venta_id: ventaId,
+                total
             }
         });
 
     } catch (error) {
-        await transaction.rollback();
+        await conn.rollback();
 
         console.error(error);
 
@@ -213,24 +180,21 @@ const crearVenta = async (req, res) => {
             success: false,
             message: 'Error al registrar la venta'
         });
+    } finally {
+        conn.release();
     }
 };
 
 const cancelarVenta = async (req, res) => {
-    const transaction = await sequelize.transaction();
+    const conn = await pool.getConnection();
 
     try {
-        const venta = await Venta.findByPk(req.params.id, {
-            include: [
-                {
-                    model: DetalleVenta
-                }
-            ],
-            transaction
-        });
+        await conn.beginTransaction();
+
+        const venta = await Venta.getByIdForUpdate(req.params.id, conn);
 
         if (!venta) {
-            await transaction.rollback();
+            await conn.rollback();
 
             return res.status(404).json({
                 success: false,
@@ -239,7 +203,7 @@ const cancelarVenta = async (req, res) => {
         }
 
         if (venta.estado === 'cancelada') {
-            await transaction.rollback();
+            await conn.rollback();
 
             return res.status(400).json({
                 success: false,
@@ -247,24 +211,15 @@ const cancelarVenta = async (req, res) => {
             });
         }
 
-        for (const detalle of venta.DetalleVenta) {
-            const producto = await Producto.findByPk(
-                detalle.producto_id,
-                { transaction }
-            );
+        const detalles = await DetalleVenta.getByVentaId(venta.id, conn);
 
-            if (producto) {
-                producto.stock += detalle.cantidad;
-
-                await producto.save({ transaction });
-            }
+        for (const detalle of detalles) {
+            await Producto.ajustarStock(detalle.producto_id, detalle.cantidad, conn);
         }
 
-        venta.estado = 'cancelada';
+        await Venta.updateEstado(venta.id, 'cancelada', conn);
 
-        await venta.save({ transaction });
-
-        await transaction.commit();
+        await conn.commit();
 
         res.status(200).json({
             success: true,
@@ -272,7 +227,7 @@ const cancelarVenta = async (req, res) => {
         });
 
     } catch (error) {
-        await transaction.rollback();
+        await conn.rollback();
 
         console.error(error);
 
@@ -280,6 +235,8 @@ const cancelarVenta = async (req, res) => {
             success: false,
             message: 'Error al cancelar la venta'
         });
+    } finally {
+        conn.release();
     }
 };
 

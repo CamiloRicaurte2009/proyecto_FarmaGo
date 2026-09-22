@@ -2,9 +2,7 @@ const Cliente = require('../models/cliente.model');
 
 const obtenerClientes = async (req, res) => {
     try {
-        const clientes = await Cliente.findAll({
-            order: [['id', 'ASC']]
-        });
+        const clientes = await Cliente.getAll();
 
         res.status(200).json({
             success: true,
@@ -24,7 +22,7 @@ const obtenerClientes = async (req, res) => {
 
 const obtenerClientePorId = async (req, res) => {
     try {
-        const cliente = await Cliente.findByPk(req.params.id);
+        const cliente = await Cliente.getById(req.params.id);
 
         if (!cliente) {
             return res.status(404).json({
@@ -48,13 +46,7 @@ const obtenerClientePorId = async (req, res) => {
 
 const crearCliente = async (req, res) => {
     try {
-        const {
-            nombre,
-            documento,
-            telefono,
-            correo,
-            direccion
-        } = req.body;
+        const { nombre, documento, telefono, correo, direccion } = req.body;
 
         if (!nombre || !documento) {
             return res.status(400).json({
@@ -63,13 +55,7 @@ const crearCliente = async (req, res) => {
             });
         }
 
-        const cliente = await Cliente.create({
-            nombre,
-            documento,
-            telefono,
-            correo,
-            direccion
-        });
+        const cliente = await Cliente.create({ nombre, documento, telefono, correo, direccion });
 
         res.status(201).json({
             success: true,
@@ -89,16 +75,17 @@ const crearCliente = async (req, res) => {
 
 const actualizarCliente = async (req, res) => {
     try {
-        const cliente = await Cliente.findByPk(req.params.id);
+        const existente = await Cliente.getById(req.params.id);
 
-        if (!cliente) {
+        if (!existente) {
             return res.status(404).json({
                 success: false,
                 message: 'Cliente no encontrado'
             });
         }
 
-        await cliente.update(req.body);
+        await Cliente.update(req.params.id, req.body);
+        const cliente = await Cliente.getById(req.params.id);
 
         res.status(200).json({
             success: true,
@@ -116,16 +103,16 @@ const actualizarCliente = async (req, res) => {
 
 const eliminarCliente = async (req, res) => {
     try {
-        const cliente = await Cliente.findByPk(req.params.id);
+        const existente = await Cliente.getById(req.params.id);
 
-        if (!cliente) {
+        if (!existente) {
             return res.status(404).json({
                 success: false,
                 message: 'Cliente no encontrado'
             });
         }
 
-        await cliente.destroy();
+        await Cliente.remove(req.params.id);
 
         res.status(200).json({
             success: true,
