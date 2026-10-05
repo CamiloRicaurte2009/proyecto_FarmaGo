@@ -4,6 +4,8 @@ const app = express();
 
 app.use(express.json());
 
+// Importar rutas
+const authRoutes = require('./routes/auth.routes');
 const productosRoutes = require('./routes/productos.routes');
 const categoriasRoutes = require('./routes/categorias.routes');
 const clientesRoutes = require('./routes/clientes.routes');
@@ -11,6 +13,8 @@ const proveedoresRoutes = require('./routes/proveedores.routes');
 const inventarioRoutes = require('./routes/inventario.routes');
 const ventasRoutes = require('./routes/ventas.routes');
 
+// Usar rutas
+app.use('/api/auth', authRoutes);
 app.use('/api/productos', productosRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/clientes', clientesRoutes);
@@ -24,7 +28,5 @@ app.get('/', (req, res) => {
         version: '1.0.0'
     });
 });
-
-module.exports = app;
 
 module.exports = app;
