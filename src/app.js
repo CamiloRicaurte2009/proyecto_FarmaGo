@@ -5,10 +5,8 @@ const app = express();
 // Middleware para parsear JSON
 app.use(express.json());
 
-// Rutas
-const productosRouter = require('./routes/productos.routes');
-const authRouter = require('./routes/auth.routes');
-const usersRouter = require('./routes/users.routes');
+// Importar rutas
+const authRoutes = require('./routes/auth.routes');
 const productosRoutes = require('./routes/productos.routes');
 const categoriasRoutes = require('./routes/categorias.routes');
 const clientesRoutes = require('./routes/clientes.routes');
@@ -17,9 +15,8 @@ const inventarioRoutes = require('./routes/inventario.routes');
 const ventasRoutes = require('./routes/ventas.routes');
 const detalleVentaRoutes = require('./routes/detalleVenta.routes');
 
-app.use('/api/productos', productosRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/users', usersRouter);
+// Usar rutas
+app.use('/api/auth', authRoutes);
 app.use('/api/productos', productosRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/clientes', clientesRoutes);

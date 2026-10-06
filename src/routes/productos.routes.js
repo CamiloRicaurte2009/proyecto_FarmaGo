@@ -1,4 +1,5 @@
 const express = require('express');
+const { verificarToken } = require('../middlewares/auth.middleware');
 
 const {
     obtenerProductos,
@@ -10,14 +11,13 @@ const {
 
 const router = express.Router();
 
+// PÚBLICAS (sin token)
 router.get('/', obtenerProductos);
+router.get('/:id', obtenerProductoPorId);
 
-router.get('/:id', obtenerProductoPorId);   
-
-router.post('/', crearProducto);
-
-router.put('/:id', actualizarProducto);
-
-router.delete('/:id', eliminarProducto);
+// PRIVADAS (con token)
+router.post('/', verificarToken, crearProducto);
+router.put('/:id', verificarToken, actualizarProducto);
+router.delete('/:id', verificarToken, eliminarProducto);
 
 module.exports = router;
