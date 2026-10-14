@@ -1,5 +1,5 @@
 const express = require('express');
-const { verificarToken } = require('../middlewares/auth.middleware');
+const { verificarToken } = require('../middlewares/autenticacion.middleware');
 
 const {
     obtenerProductos,

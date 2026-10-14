@@ -1,9 +1,9 @@
 const pool = require('../config/database');
 
-const Venta = require('../models/venta.model');
+const Venta = require('../models/ventas.model');
 const DetalleVenta = require('../models/detalleVenta.model');
-const Producto = require('../models/producto.model');
-const Cliente = require('../models/cliente.model');
+const Producto = require('../models/productos.model');
+const Cliente = require('../models/clientes.model');
 
 const obtenerVentas = async (req, res) => {
     try {

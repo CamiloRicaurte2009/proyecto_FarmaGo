@@ -1,6 +1,6 @@
 const DetalleVenta = require('../models/detalleVenta.model');
-const Venta = require('../models/venta.model');
-const Producto = require('../models/producto.model');
+const Venta = require('../models/ventas.model');
+const Producto = require('../models/productos.model');
 
 // GET /api/detalles-venta/venta/:ventaId
 // Lista los productos vendidos dentro de una venta específica.

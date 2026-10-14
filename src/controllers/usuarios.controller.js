@@ -1,4 +1,4 @@
-const Usuario = require('../models/usarios.model');
+const Usuario = require('../models/usuarios.model');
 
 // GET /api/users
 const getAll = async (req, res) => {
