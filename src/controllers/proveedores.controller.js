@@ -1,4 +1,4 @@
-const Proveedor = require('../models/proveedor.model');
+const Proveedor = require('../models/proveedores.model');
 
 const obtenerProveedores = async (req, res) => {
     try {

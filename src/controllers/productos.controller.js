@@ -1,9 +1,9 @@
-const Producto = require('../models/producto.model');
+const Producto = require('../models/productos.model');
 
-// ==========================================
+
 // GET /api/productos
 // Obtener todos los productos
-// ==========================================
+
 const obtenerProductos = async (req, res) => {
     try {
         const productos = await Producto.getAll();
@@ -25,10 +25,10 @@ const obtenerProductos = async (req, res) => {
 };
 
 
-// ==========================================
+
 // GET /api/productos/:id
 // Obtener producto por ID
-// ==========================================
+
 const obtenerProductoPorId = async (req, res) => {
     try {
         const { id } = req.params;
@@ -58,10 +58,10 @@ const obtenerProductoPorId = async (req, res) => {
 };
 
 
-// ==========================================
+
 // POST /api/productos
 // Crear producto
-// ==========================================
+
 const crearProducto = async (req, res) => {
     try {
         const {
@@ -117,10 +117,10 @@ const crearProducto = async (req, res) => {
 };
 
 
-// ==========================================
+
 // PUT /api/productos/:id
 // Actualizar producto
-// ==========================================
+
 const actualizarProducto = async (req, res) => {
     try {
         const { id } = req.params;
@@ -189,10 +189,10 @@ const actualizarProducto = async (req, res) => {
 };
 
 
-// ==========================================
+
 // DELETE /api/productos/:id
 // Eliminar producto
-// ==========================================
+
 const eliminarProducto = async (req, res) => {
     try {
         const { id } = req.params;
@@ -224,9 +224,9 @@ const eliminarProducto = async (req, res) => {
 };
 
 
-// ==========================================
+
 // EXPORTAR FUNCIONES
-// ==========================================
+
 module.exports = {
     obtenerProductos,
     obtenerProductoPorId,
