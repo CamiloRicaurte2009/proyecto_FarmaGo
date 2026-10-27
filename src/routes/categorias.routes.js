@@ -1,4 +1,5 @@
 const express = require('express');
+const { verificarToken } = require('../middlewares/autenticacion.middleware');
 
 const {
     obtenerCategorias,
@@ -10,14 +11,17 @@ const {
 
 const router = express.Router();
 
+// publicas
 router.get('/', obtenerCategorias);
 
 router.get('/:id', obtenerCategoriaPorId);
 
-router.post('/', crearCategoria);
+// privadas
 
-router.put('/:id', actualizarCategoria);
+router.post('/', verificarToken, crearCategoria);
 
-router.delete('/:id', eliminarCategoria);
+router.put('/:id', verificarToken, actualizarCategoria);
+
+router.delete('/:id', verificarToken, eliminarCategoria);
 
 module.exports = router;

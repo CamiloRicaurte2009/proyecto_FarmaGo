@@ -1,4 +1,5 @@
 const express = require('express');
+const { verificarToken } = require('../middlewares/autenticacion.middleware');
 
 const {
     obtenerDetallesPorVenta,
@@ -7,8 +8,8 @@ const {
 
 const router = express.Router();
 
-router.get('/venta/:ventaId', obtenerDetallesPorVenta);
+router.get('/venta/:ventaId', verificarToken, obtenerDetallesPorVenta);
 
-router.post('/', crearDetalleVenta);
+router.post('/', verificarToken, crearDetalleVenta);
 
 module.exports = router;

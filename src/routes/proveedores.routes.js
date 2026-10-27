@@ -1,4 +1,5 @@
 const express = require('express');
+const { verificarToken } = require('../middlewares/autenticacion.middleware');
 
 const {
     obtenerProveedores,
@@ -10,14 +11,14 @@ const {
 
 const router = express.Router();
 
-router.get('/', obtenerProveedores);
+router.get('/', verificarToken, obtenerProveedores);
 
-router.get('/:id', obtenerProveedorPorId);
+router.get('/:id', verificarToken, obtenerProveedorPorId);
 
-router.post('/', crearProveedor);
+router.post('/', verificarToken, crearProveedor);
 
-router.put('/:id', actualizarProveedor);
+router.put('/:id', verificarToken, actualizarProveedor);
 
-router.delete('/:id', eliminarProveedor);
+router.delete('/:id', verificarToken, eliminarProveedor);
 
 module.exports = router;
