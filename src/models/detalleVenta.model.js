@@ -1,44 +1,25 @@
-const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const pool = require('../config/database');
 
-const DetalleVenta = sequelize.define(
-    'DetalleVenta',
-    {
-        id: {
-            type: DataTypes.INTEGER,
-            autoIncrement: true,
-            primaryKey: true
-        },
+// ? = placeholder seguro (evita SQL Injection)
 
-        venta_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
+const getByVentaId = async (ventaId, conn = pool) => {
+  const [rows] = await conn.query(
+    `SELECT dv.*, p.nombre AS producto_nombre, p.precio AS producto_precio_actual
+     FROM detalles_venta dv
+     JOIN productos p ON p.id = dv.producto_id
+     WHERE dv.venta_id = ?`,
+    [ventaId]
+  );
+  return rows;
+};
 
-        producto_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
+const create = async ({ venta_id, producto_id, cantidad, precio_unitario, subtotal }, conn = pool) => {
+  const [result] = await conn.query(
+    `INSERT INTO detalles_venta (venta_id, producto_id, cantidad, precio_unitario, subtotal)
+     VALUES (?, ?, ?, ?, ?)`,
+    [venta_id, producto_id, cantidad, precio_unitario, subtotal]
+  );
+  return { id: result.insertId, venta_id, producto_id, cantidad, precio_unitario, subtotal };
+};
 
-        cantidad: {
-            type: DataTypes.INTEGER,
-            allowNull: false
-        },
-
-        precio_unitario: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        },
-
-        subtotal: {
-            type: DataTypes.DECIMAL(10, 2),
-            allowNull: false
-        }
-    },
-    {
-        tableName: 'detalles_venta',
-        timestamps: true
-    }
-);
-
-module.exports = DetalleVenta;
+module.exports = { getByVentaId, create };
