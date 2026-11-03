@@ -1,5 +1,7 @@
 const express = require('express');
 
+const { verificarToken } = require('../middlewares/autenticacion.middleware');
+
 const {
     obtenerClientes,
     obtenerClientePorId,
@@ -10,14 +12,14 @@ const {
 
 const router = express.Router();
 
-router.get('/', obtenerClientes);
+router.get('/',verificarToken, obtenerClientes);
 
-router.get('/:id', obtenerClientePorId);
+router.get('/:id', verificarToken, obtenerClientePorId);
 
-router.post('/', crearCliente);
+router.post('/', verificarToken,    crearCliente);
 
-router.put('/:id', actualizarCliente);
+router.put('/:id', verificarToken, actualizarCliente);
 
-router.delete('/:id', eliminarCliente);
+router.delete('/:id', verificarToken, eliminarCliente);
 
 module.exports = router;
