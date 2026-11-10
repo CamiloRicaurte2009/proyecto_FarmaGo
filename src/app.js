@@ -22,7 +22,7 @@ const ventasRoutes = require('./routes/ventas.routes');
 const detalleVentaRoutes = require('./routes/detalleVenta.routes');
 
 // Usar rutas
-app.use('/api/autenticacion', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/productos', productosRoutes);
 app.use('/api/categorias', categoriasRoutes);
 app.use('/api/clientes', clientesRoutes);
