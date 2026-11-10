@@ -1,4 +1,5 @@
 const express = require('express');
+const { verificarToken } = require('../middlewares/autenticacion.middleware');
 
 const {
     obtenerInventario,
@@ -9,11 +10,11 @@ const {
 
 const router = express.Router();
 
-router.get('/', obtenerInventario);
+router.get('/', verificarToken,obtenerInventario);
 
-router.get('/bajo-stock', productosBajoStock);
+router.get('/bajo-stock', verificarToken,productosBajoStock);
 
-router.post('/entrada', entradaInventario);
+router.post('/entrada', verificarToken,entradaInventario);
 
 router.post('/salida', salidaInventario);
 

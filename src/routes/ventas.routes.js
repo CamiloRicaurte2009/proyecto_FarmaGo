@@ -1,4 +1,5 @@
 const express = require('express');
+const { verificarToken } = require('../middlewares/autenticacion.middleware');
 
 const {
     obtenerVentas,
@@ -9,12 +10,12 @@ const {
 
 const router = express.Router();
 
-router.get('/', obtenerVentas);
+router.get('/', verificarToken, obtenerVentas);
 
-router.get('/:id', obtenerVentaPorId);
+router.get('/:id', verificarToken, obtenerVentaPorId);
 
-router.post('/', crearVenta);
+router.post('/', verificarToken, crearVenta);
 
-router.put('/:id/cancelar', cancelarVenta);
+router.put('/:id/cancelar', verificarToken, cancelarVenta);
 
 module.exports = router;

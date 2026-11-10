@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/database');
 
-// Crea el token con los datos del usuario
+
 const generarToken = (usuario) =>
   jwt.sign(
     { id: usuario.id, email: usuario.email },
