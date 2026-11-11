@@ -5,8 +5,13 @@ const app = express();
 const cors   = require('cors');
 const morgan = require('morgan');
 
+const origenes = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: origenes.length ? origenes : '*',
 }));
 app.use(morgan('dev'));
 app.use(express.json());
